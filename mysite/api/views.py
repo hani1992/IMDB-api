@@ -19,6 +19,41 @@ def movieList(request):
     serializer = MovieSerializer(movies, many=True)
     return Response(serializer.data)
 
+@api_view(['GET'])
+def movieDetails(request, pk):
+    try:
+        movies = Movies.objects.get(id=pk)
+        serializer = MovieSerializer(movies, many=False)
+        return Response(serializer.data)
+    except Movies.DoesNotExist:
+        return Response({})
+
+@api_view(['GET'])
+def movieFilter(request, find):
+    movies = Movies.objects.filter(title__icontains=find)
+    serializer = MovieSerializer(movies, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def createNewMovie(request):
+    serializer = MovieSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+@api_view(['PUT'])
+def updateMovie(request, pk):
+    movie = Movies.obkects.get(id=pk)
+    serializers = MovieSerializer(instance=movie, data=request.data)
+    if serializers.is_valid():
+        serializers.save()
+    return Response(serializers.data)
+
+@api_view(['DELETE'])
+def deleteMovie(request, pk):
+    movie = Movies.objects.get(id=pk)
+    movie.delete()
+    return Response('Deleted')
 
 @api_view(['GET'])
 def topRates(request):
@@ -49,8 +84,10 @@ def topFeatured(request):
 class CustomAuthToken(ObtainAuthToken):
 
     def post(self, request, *args, **kwargs):
+        print("req: ", str(request.data))
         serializer = self.serializer_class(data=request.data,
                                            context={'request': request})
+        print("ser", str(serializer))
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
